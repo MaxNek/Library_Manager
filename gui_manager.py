@@ -271,7 +271,7 @@ class GuiApp(Tk):
         if self.is_read_entry.get() == 'Yes':
             is_read = True
         else:
-            is_read = False
+            is_read = ''
         new_book = Book(
             title=self.title_entry.get().title(),
             author=self.author_entry.get().title(),

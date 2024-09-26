@@ -31,7 +31,7 @@ class Book:
                 'author': ('Author\'s name', self.author),
                 'description': ('Book description', self.description),
                 'notes': ('My notes', self.notes),
-                'is_read': ('Has been read?', "Yes" if self.is_read else "Not yet"),
+                'is_read': ('Has the book been read?', "Yes" if self.is_read else "Not yet"),
                 'current_page': ('Currently at page', self.current_page),
                 'rating': ('My rating', self.rating),
                 'is_lent': ('Book is lent to', self.is_lent),
