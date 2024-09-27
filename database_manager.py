@@ -75,44 +75,33 @@ class Library:
         query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} = "{criteria[1]}"').fetchall()
         return self.__make_book__(query_result)
 
-    def update_book(self, isbn, attribute: tuple) -> str:
+    def update_book(self, isbn, attribute: tuple) -> int:
         """
         Locate a book by ISBN and update an attribute
         Args:
             isbn (str): book ISBN
             attribute (tuple): (attribute to update: str, new value: str)
         Returns:
-            (str): message that a that the attribute was updated to the value
+            (int): number of updated rows
         """
-        if isbn != '':
-            result = self.cursor.execute(f'UPDATE books SET {attribute[0]}="{attribute[1]}" WHERE isbn={isbn}')
-            self.connection.commit()
-            if result.rowcount == 0:
-                return f'There in no book with ISBN {isbn} in the library'
-            else:
-                return f'Updated {attribute[0].title()} to "{attribute[1]}"'
-        else:
-            return 'Enter ISBN to update'
+        result = self.cursor.execute(f'UPDATE books SET {attribute[0]}="{attribute[1]}" WHERE isbn={isbn}').rowcount
+        self.connection.commit()
+        return result
 
-    # TODO: DELETE BOOK should print title/author instead of ISBN
-
-    def delete_book(self, isbn: str) -> str:
+    def delete_book(self, isbn: str):
         """
         Locate a book by ISBN and delete it from the library
         Args:
             isbn (str): book ISBN
         Returns:
-            (str): message if a book was deleted, not found, or if isbn was not entered
+            (int, None): number of deleted rows or None
         """
         if isbn != '':
-            result = self.cursor.execute(f'DELETE FROM books WHERE isbn={isbn}')
+            result = self.cursor.execute(f'DELETE FROM books WHERE isbn={isbn}').rowcount
             self.connection.commit()
-            if result.rowcount == 0:
-                return f'There in no book with ISBN {isbn} in the library'
-            else:
-                return f'Deleted book with ISBN {isbn}'
+            return result
         else:
-            return 'Enter ISBN to delete'
+            return None
 
     def __make_book__(self, query_result: list) -> list:
         """

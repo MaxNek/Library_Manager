@@ -14,18 +14,21 @@ WIDGET_FRAME_BORDER = 0
 WIDGET_PADDING = 5
 WIDGET_MARGIN = 10
 
-BUTTON_PADDING = 2
+BUTTON_PADDING = 5
 BUTTON_WIDTH = 14
 
 ENTRY_WIDTH = 23
 ENTRY_PADDING = 1
 
-OUTPUT_WIDTH = 108
+OUTPUT_WIDTH = 80
 OUTPUT_HEIGHT = 15
 
 BOOK_WINDOW_FRAME_PADDING = 5
 BOOK_WINDOW_TEXT_FONT = ('Arial', 10, 'normal')
-BOOK_WINDOW_TEXT_BG_COLOR = 'white'
+BOOK_WINDOW_TEXT_BG_COLOR = 'SlateGray2'
+BOOK_WINDOW_TEXT_BG_COLOR_EDIT = 'white'
+BOOK_WINDOW_DESCRIPTION_HEIGHT = 15
+BOOK_WINDOW_NOTES_HEIGHT = 2
 
 class GuiApp(Tk):
     def __init__(self, library: Library):
@@ -42,14 +45,15 @@ class GuiApp(Tk):
         self.__output_widget__()
         self.__add_book_widget__()
         self.__find_book_widget__()
-        self.__update_book_widget__()
         self.__delete_book_widget__()
 
         self.list_of_books = []
 
+        # TODO: Consider 'Quit' button
+
         # Add 'Quit' button
-        self.quit_button = Button(text='Quit', width=BUTTON_WIDTH, command=self.destroy)
-        self.quit_button.grid(column=0, row=3, pady=BUTTON_PADDING)
+        # self.quit_button = Button(text='Quit', width=BUTTON_WIDTH, command=self.destroy)
+        # self.quit_button.grid(column=0, row=3, pady=BUTTON_PADDING)
 
 #----------------------------- Widgets -----------------------------#
     def __view_all_widget__(self):
@@ -71,7 +75,7 @@ class GuiApp(Tk):
 
     def __add_book_widget__(self):
         # Create widget frame
-        frame = self.__make_frame__(column=2, row=0, rowspan=2, widget_name='Add a book')
+        frame = self.__make_frame__(column=1, row=0, rowspan=2, widget_name='Add a book')
 
         # Create entry forms
         self.add_book_entries = []
@@ -107,7 +111,7 @@ class GuiApp(Tk):
 
         rating_label = Label(frame, text='My rating', bg=MAIN_BACKGROUND_COLOR)
         rating_label.grid(column=1, row=1)
-        self.rating_entry = tkinter.ttk.Combobox(frame, state="readonly", values=[str(score) for score in range(1, 11)])
+        self.rating_entry = tkinter.ttk.Combobox(frame, state="readonly", values=[str(score) for score in range(0, 11)])
         self.rating_entry.grid(column=1, row=2, padx=ENTRY_PADDING)
         self.add_book_entries.append(self.rating_entry)
 
@@ -145,6 +149,7 @@ class GuiApp(Tk):
         frame = self.__make_frame__(column=0, row=1, widget_name='Find books')
 
         # TODO: make 'Find book widget' dropdown human readable
+        # TODO: make is_lent search by 'lent"
 
         # Create 'Search by' dropdown
         search_by_label = Label(frame, text='Search by:', bg=MAIN_BACKGROUND_COLOR)
@@ -162,37 +167,6 @@ class GuiApp(Tk):
         button = Button(frame, text='Find', width=BUTTON_WIDTH, command=self.__find_book__)
         button.grid(column=0, row=4, pady=BUTTON_PADDING)
 
-    def __update_book_widget__(self):
-        # Create widget frame
-        frame = self.__make_frame__(column=1, row=0, rowspan=2, widget_name='Update book')
-
-        # TODO: make 'Update book widget' dropdown human readable
-
-        # Create entry forms
-        self.update_book_entries = []
-        isbn_to_update = Label(frame, text='ISBN', bg=MAIN_BACKGROUND_COLOR)
-        isbn_to_update.grid(column=0, row=1)
-        self.isbn_to_update_entry = Entry(frame, width=ENTRY_WIDTH)
-        self.isbn_to_update_entry.grid(column=0, row=2, padx=ENTRY_PADDING)
-        self.update_book_entries.append(self.isbn_to_update_entry)
-
-        update_field_label = Label(frame, text='Update', bg=MAIN_BACKGROUND_COLOR)
-        update_field_label.grid(column=0, row=3)
-        self.update_field_entry = tkinter.ttk.Combobox(frame, state="readonly", values=['title', 'author', 'is_read', 'rating',
-                                                                               'notes', 'is_lent', 'location', 'isbn'])
-        self.update_field_entry.grid(column=0, row=4, padx=ENTRY_PADDING)
-        self.update_book_entries.append(self.update_field_entry)
-
-        update_to_label = Label(frame, text='To', bg=MAIN_BACKGROUND_COLOR)
-        update_to_label.grid(column=0, row=5)
-        self.update_to_entry = Entry(frame, width=ENTRY_WIDTH)
-        self.update_to_entry.grid(column=0, row=6, padx=ENTRY_PADDING)
-        self.update_book_entries.append(self.update_to_entry)
-
-        # Create 'Update' button
-        button = Button(frame, text='Update', width=BUTTON_WIDTH, command=self.__update_book__)
-        button.grid(column=0, row=7, pady=BUTTON_PADDING)
-
     def __delete_book_widget__(self):
         # Create widget frame
         frame = self.__make_frame__(column=1, row=3, columnspan=2, widget_name='Delete book by ISBN:')
@@ -208,54 +182,17 @@ class GuiApp(Tk):
     def __output_widget__(self):
         # Create a scrollbar
         self.scrollbar = Scrollbar(self)
-        self.scrollbar.grid(column=3, row=2)
+        self.scrollbar.grid(column=2, row=2)
 
         # Create an output screen
         self.output = Listbox(width=OUTPUT_WIDTH, height=OUTPUT_HEIGHT, yscrollcommand=self.scrollbar.set)
-        self.output.grid(column=0, row=2, columnspan=3, padx=WIDGET_PADDING, pady=WIDGET_PADDING)
+        self.output.grid(column=0, row=2, columnspan=2, padx=WIDGET_PADDING, pady=WIDGET_PADDING)
         self.output.bind('<Double-1>', self.__click__)
 
         # Attach the scrollbar to the output screen
         self.scrollbar.config(command=self.output.yview)
 
-# ----------------------------- Widget button functionality -----------------------------#
-
-    def __click__(self, event):
-        selection = self.output.curselection()
-        book = self.list_of_books[selection[0]]
-        window = Toplevel(bg=MAIN_BACKGROUND_COLOR, padx=MAIN_WINDOW_PADDING, pady=MAIN_WINDOW_PADDING)
-        window.title('Book Details')
-        row = 0
-        right_row = 4
-        left_row = 4
-        for attribute, content in book.get_all_info().items():
-            frame = LabelFrame(master=window,
-                               text=f'{content[0]}',
-                               highlightbackground=WIDGET_FRAME_COLOR,
-                               highlightthickness=WIDGET_FRAME_BORDER,
-                               bg=MAIN_BACKGROUND_COLOR,
-                               bd=0)
-            text_width = 20
-            if attribute in ['title', 'author', 'description', 'notes']:
-                frame.grid(column=0, row=row, columnspan=2)
-                text_width = 70
-            elif attribute in ['is_read', 'current_page', 'rating']:
-                frame.grid(column=0, row=right_row)
-                right_row += 1
-            else:
-                frame.grid(column=1, row=left_row)
-                left_row += 1
-            if attribute == 'description':
-                cont_text = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR, height=15, wrap='word', font=BOOK_WINDOW_TEXT_FONT)
-            elif attribute == 'notes':
-                cont_text = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR, height=2, wrap='word', font=BOOK_WINDOW_TEXT_FONT)
-            else:
-                cont_text = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR, height=1,  wrap='word', font=BOOK_WINDOW_TEXT_FONT)
-            cont_text.insert(tkinter.END, f'{content[1]}')
-            cont_text.config(state='disabled', width=text_width)
-            cont_text.grid(column=0, row=0, pady=BOOK_WINDOW_FRAME_PADDING )
-            row += 1
-        window.mainloop()
+    # ----------------------------- Widget button functionality -----------------------------#
 
     def __display_all__(self):
         self.list_of_books.clear()
@@ -304,19 +241,8 @@ class GuiApp(Tk):
             self.search_by.set('')
             self.search_by_entry.delete(first=0, last=END)
 
-    def __update_book__(self):
-        self.output.delete(first=0, last=END)
-        isbn = self.isbn_to_update_entry.get()
-        field = self.update_field_entry.get()
-        new_value = self.update_to_entry.get()
-        if field != '':
-            result = self.library.update_book(isbn=isbn, attribute=(field, new_value))
-            self.output.insert(END, result)
-        for entry in self.update_book_entries:
-            if type(entry) == tkinter.ttk.Combobox:
-                entry.set('')
-            else:
-                entry.delete(first=0, last=END)
+    # TODO: DELETE BOOK should print title/author instead of ISBN - message
+    # TODO: show confirmation message before deleting book
 
     def __delete_book__(self):
         self.output.delete(first=0, last=END)
@@ -324,6 +250,99 @@ class GuiApp(Tk):
         result = self.library.delete_book(isbn=isbn)
         self.output.insert(END, result)
         self.isbn_to_delete.delete(first=0, last=END)
+
+# ----------------------------- Book pop-up window -----------------------------#
+
+    def __click__(self, event):
+        # Get book object from selection
+        selection = self.output.curselection()
+        book = self.list_of_books[selection[0]]
+
+        # Create pop-up window
+        self.window = Toplevel(bg=MAIN_BACKGROUND_COLOR, padx=MAIN_WINDOW_PADDING, pady=MAIN_WINDOW_PADDING)
+        self.window.title('Book Details')
+
+        # Fill pop-up window with widgets and book information
+        self.text_containers = []
+        centered_row = 0
+        right_row = left_row = 4
+        for attribute, content in book.get_all_info().items():
+            frame = LabelFrame(master=self.window,
+                               text=f'{content[0]}',
+                               highlightbackground=WIDGET_FRAME_COLOR,
+                               highlightthickness=WIDGET_FRAME_BORDER,
+                               bg=MAIN_BACKGROUND_COLOR,
+                               bd=0)
+            text_container_width = 20
+            if attribute in ['title', 'author', 'description', 'notes']:
+                frame.grid(column=0, row=centered_row, columnspan=2)
+                text_container_width = 70
+            elif attribute in ['is_read', 'current_page', 'rating']:
+                frame.grid(column=0, row=right_row)
+                right_row += 1
+            else:
+                frame.grid(column=1, row=left_row)
+                left_row += 1
+            if attribute == 'description':
+                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                                 height=BOOK_WINDOW_DESCRIPTION_HEIGHT,
+                                 wrap='word', font=BOOK_WINDOW_TEXT_FONT)
+            elif attribute == 'notes':
+                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                                 height=BOOK_WINDOW_NOTES_HEIGHT, wrap='word',
+                                 font=BOOK_WINDOW_TEXT_FONT)
+            else:
+                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                                 height=1,
+                                 wrap='word',
+                                 font=BOOK_WINDOW_TEXT_FONT)
+            container.insert(tkinter.END, f'{content[1]}')
+            container.config(state='disabled', width=text_container_width)
+            container.grid(column=0, row=0, pady=BOOK_WINDOW_FRAME_PADDING)
+            self.text_containers.append(container)
+            centered_row += 1
+
+        # Create 'Edit' button
+        edit_button = Button(self.window, text='Edit book', width=BUTTON_WIDTH, command=self.__edit_book__)
+        edit_button.grid(column=0, row=7, pady=BUTTON_PADDING)
+
+        # Create 'Save' button
+        save_button = Button(self.window, text='Save changes', width=BUTTON_WIDTH, command=self.__save_changes__)
+        save_button.grid(column=0, row=8, pady=BUTTON_PADDING)
+
+        # Create 'Delete' button
+        save_button = Button(self.window, text='Delete book', width=BUTTON_WIDTH, command=self.__delete_book_alt__)
+        save_button.grid(column=1, row=8, columnspan=2, pady=BUTTON_PADDING)
+
+        self.window.mainloop()
+
+# ----------------------------- Pop-up window button functionality -----------------------------#
+
+    # TODO: bug when description = 'notes'
+
+    def __edit_book__(self):
+        self.isbn_to_update = self.text_containers[-1].get('1.0', tkinter.END).strip()
+        for container in self.text_containers:
+            container.config(state='normal', bg=BOOK_WINDOW_TEXT_BG_COLOR_EDIT)
+
+    def __save_changes__(self):
+        isbn = self.isbn_to_update
+        attributes = ['title', 'author', 'description', 'notes', 'is_read', 'current_page', 'rating', 'is_lent','location', 'isbn']
+        ind = 0
+        for container in self.text_containers:
+            content = container.get('1.0', tkinter.END).strip()
+            container.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
+            self.library.update_book(isbn=isbn, attribute=(attributes[ind], content))
+            ind += 1
+        self.__display_all__()
+
+    # TODO: show confirmation message before deleting book
+
+    def __delete_book_alt__(self):
+        isbn = self.text_containers[-1].get('1.0', tkinter.END).strip()
+        result = self.library.delete_book(isbn=isbn)
+        self.__display_all__()
+        self.window.destroy()
 
 # ----------------------------- Class utilities -----------------------------#
 
