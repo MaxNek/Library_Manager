@@ -32,6 +32,7 @@ BOOK_WINDOW_TEXT_BG_COLOR_EDIT = 'white'
 BOOK_WINDOW_DESCRIPTION_HEIGHT = 15
 BOOK_WINDOW_NOTES_HEIGHT = 2
 
+
 BOOK_LOCATION_OPTIONS = ['living room', 'bedroom']
 BOOK_RATING_OPTIONS = ['', '1', '2', '3', '4', '5']
 
@@ -147,15 +148,15 @@ class GuiApp(Tk):
         # Create widget frame
         frame = self.__make_frame__(column=0, row=1, widget_name='Find books')
 
-        # TODO: make 'Find book widget' dropdown human readable
-        # TODO: make is_lent search by 'lent"
-
         # Create 'Search by' dropdown
-        search_by_label = Label(frame, text='Search by:', bg=MAIN_BACKGROUND_COLOR)
+        book_search_options = ['Title', 'Author', 'Has been read?', 'Rating', 'In notes', 'In description',
+                               'Has been borrowed?', 'Has been lent to', 'Location', 'ISBN']
+        search_by_label = Label(frame, text='Search:', bg=MAIN_BACKGROUND_COLOR)
         search_by_label.grid(column=0, row=1)
-        self.search_by = tkinter.ttk.Combobox(frame, state="readonly", values=['title', 'author', 'is_read', 'rating',
-                                                                               'notes', 'is_lent', 'location', 'isbn'])
-        self.search_by.set('title')
+        self.search_by = tkinter.ttk.Combobox(frame,
+                                              state="readonly",
+                                              values=book_search_options)
+        self.search_by.set('Title')
         self.search_by.grid(column=0, row=2)
 
         # Create entry field
@@ -206,21 +207,19 @@ class GuiApp(Tk):
         self.output.delete(first=0, last=END)
         self.list_of_books.clear()
         if self.isbn_entry.get() != '' and self.title_entry.get().title() != '':
-            if self.is_read_entry.get() == 'Yes':
-                is_read = True
-            else:
-                is_read = False
+            is_read = True if self.is_read_entry.get() == 'Yes' else False
+            is_lent = '' if self.is_lent_entry.get() == '' else self.is_lent_entry.get().title().strip()
             new_book = Book(
-                title=self.title_entry.get().title(),
-                author=self.author_entry.get().title(),
-                description=self.descr_entry.get().replace('"', "'"),
+                title=self.title_entry.get().title().strip(),
+                author=self.author_entry.get().title().strip(),
+                description=self.descr_entry.get().replace('"', "'").strip(),
                 is_read=is_read,
-                current_page=self.current_page_entry.get(),
+                current_page=self.current_page_entry.get().strip(),
                 rating=self.rating_entry.get(),
-                notes=self.notes_entry.get(),
-                is_lent=self.is_lent_entry.get().title(),
+                notes=self.notes_entry.get().strip(),
+                is_lent=is_lent,
                 location=self.location_entry.get(),
-                isbn=self.isbn_entry.get())
+                isbn=self.isbn_entry.get().strip())
             result = self.library.add_book(new_book)
             if result:
                 self.list_of_books.append(result)
@@ -238,13 +237,30 @@ class GuiApp(Tk):
             self.output.insert(END, 'Book title and ISBN must be entered')
 
     def __find_book__(self):
+        book_search_non_db_options = {'Has been read?': 'is_read',
+                                      'In notes': 'notes',
+                                      'In description': 'description',
+                                      'Has been borrowed?': 'is_lent',
+                                      'Has been lent to': 'is_lent'}
         self.list_of_books.clear()
         self.output.delete(first=0, last=END)
         if self.search_by.get() != '' and self.search_by_entry.get() != '':
-            self.output.delete(first=0, last=END)
-            attribute = self.search_by.get()
-            prompt = self.search_by_entry.get()
+            entry = self.search_by_entry.get().lower()
+            if self.search_by.get() in book_search_non_db_options:
+                attribute = book_search_non_db_options[f'{self.search_by.get()}']
+                if attribute == 'is_read':
+                    prompt = 'True' if entry == 'yes' else 'False'
+                elif attribute == 'is_lent' and entry == 'no':
+                    prompt = 'is_lent_no'
+                elif attribute == 'is_lent' and entry == 'yes':
+                    prompt = 'is_lent_yes'
+                else:
+                    prompt = entry
+            else:
+                attribute = self.search_by.get()
+                prompt = entry
             criteria = (attribute, prompt)
+            print(criteria)
             result = self.library.find_book(criteria=criteria)
             for book in result:
                 self.output.insert(END, book)
@@ -261,7 +277,7 @@ class GuiApp(Tk):
                                              f'Are you sure you want to delete {book_to_delete}?',
                                              icon=messagebox.WARNING)
             if confirm == 'yes':
-                result = self.library.delete_book(isbn=isbn)
+                self.library.delete_book(isbn=isbn)
                 self.output.insert(END, f'Deleted {book_to_delete}')
                 self.isbn_to_delete.delete(first=0, last=END)
         else:
@@ -269,6 +285,8 @@ class GuiApp(Tk):
 
 
 # ----------------------------- Book pop-up window -----------------------------#
+
+    # TODO: fix  Compbox colours
 
     def __click__(self, event):
         # Get book object from selection
@@ -288,8 +306,6 @@ class GuiApp(Tk):
                            'location': BOOK_LOCATION_OPTIONS}
         centered_row = 0
         right_row = left_row = 4
-        self.style = ttk.Style()
-        self.style.configure('TCombobox', background='blue')
         for attribute, content in book.get_all_info().items():
             frame = LabelFrame(master=self.window,
                                text=f'{content[0]}',
@@ -351,7 +367,7 @@ class GuiApp(Tk):
 
 # ----------------------------- Pop-up window button functionality -----------------------------#
 
-    # TODO: fix bug when 'description' is set to the content of 'column name. PATCH - add ' ' to content when rung SET query in updtae_book
+    # TODO: fix bug when 'description' is set to the content of 'column name. PATCH - add ' ' to content when rung SET query in update_book
 
     def __edit_book__(self):
         self.isbn_to_update = self.text_containers['isbn'].get('1.0', tkinter.END).strip()

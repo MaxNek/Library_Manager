@@ -70,7 +70,12 @@ class Library:
         Returns:
             result (list): a list of Book objects. If no match found, returns an empty list
         """
-        query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} LIKE "%{criteria[1]}%"').fetchall()
+        if criteria == ('is_lent', 'is_lent_yes'):
+            query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} IS NOT ""').fetchall()
+        elif criteria == ('is_lent', 'is_lent_no'):
+            query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} = ""').fetchall()
+        else:
+            query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} LIKE "%{criteria[1]}%"').fetchall()
         return self.__make_book__(query_result)
 
     def update_book(self, isbn, attribute: tuple) -> int:
