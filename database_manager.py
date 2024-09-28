@@ -15,10 +15,10 @@ class Library:
                 title TEXT NOT NULL, 
                 author TEXT,
                 description TEXT,
+                notes TEXT,
                 is_read TEXT,
                 current_page INTEGER,
                 rating REAL,
-                notes TEXT,
                 is_lent TEXT,
                 location TEXT,
                 isbn INTEGER PRIMARY KEY
@@ -35,34 +35,32 @@ class Library:
         query_result = self.cursor.execute(f'SELECT * FROM books ORDER BY {sort}').fetchall()
         return self.__make_book__(query_result)
 
-    def add_book(self, book: Book) -> str:
+    def add_book(self, book: Book) -> Book:
         """
         Add a book in the library
         Args:
             book (Book): a Book object
         Returns:
-            (str): message that a book was added to the library or if the book was already in the library
+            (Book): a book object
         """
         try:
             self.cursor.execute(f'''INSERT INTO books VALUES (
                 "{book.title}", 
                 "{book.author}",
                 "{book.description}",
+                "{book.notes}",
                 "{book.is_read}",
                 "{book.current_page}",
                 "{book.rating}",
-                "{book.notes}",
                 "{book.is_lent}",
                 "{book.location}",
                 "{book.isbn}"
             )''')
             self.connection.commit()
-            return 'Book has been successfully added'
+            return book
         except sqlite3.IntegrityError as error:
             if error.args == ('UNIQUE constraint failed: books.isbn',):
-                return 'already in the library'
-
-    # TODO: Consider making flexible search %%
+                pass
 
     def find_book(self, criteria: tuple) -> list:
         """
@@ -72,7 +70,7 @@ class Library:
         Returns:
             result (list): a list of Book objects. If no match found, returns an empty list
         """
-        query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} = "{criteria[1]}"').fetchall()
+        query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} LIKE "%{criteria[1]}%"').fetchall()
         return self.__make_book__(query_result)
 
     def update_book(self, isbn, attribute: tuple) -> int:
@@ -94,7 +92,7 @@ class Library:
         Args:
             isbn (str): book ISBN
         Returns:
-            (int, None): number of deleted rows or None
+            (int): number of deleted rows. Returns None if no ISBN was entered
         """
         if isbn != '':
             result = self.cursor.execute(f'DELETE FROM books WHERE isbn={isbn}').rowcount
@@ -117,10 +115,10 @@ class Library:
                 title=item[0],
                 author=item[1],
                 description=item[2],
-                is_read=item[3],
-                current_page=item[4],
-                rating=item[5],
-                notes=item[6],
+                notes=item[3],
+                is_read=item[4],
+                current_page=item[5],
+                rating=item[6],
                 is_lent=item[7],
                 location=item[8],
                 isbn=item[9])

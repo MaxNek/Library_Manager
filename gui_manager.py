@@ -2,7 +2,9 @@ import tkinter
 from database_manager import Library
 from book import Book
 from tkinter import *
-import tkinter.ttk
+from tkinter import messagebox
+import tkinter.ttk as ttk
+
 
 # GUI Settings
 MAIN_BACKGROUND_COLOR = 'light steel blue'
@@ -30,6 +32,9 @@ BOOK_WINDOW_TEXT_BG_COLOR_EDIT = 'white'
 BOOK_WINDOW_DESCRIPTION_HEIGHT = 15
 BOOK_WINDOW_NOTES_HEIGHT = 2
 
+BOOK_LOCATION_OPTIONS = ['living room', 'bedroom']
+BOOK_RATING_OPTIONS = ['', '1', '2', '3', '4', '5']
+
 class GuiApp(Tk):
     def __init__(self, library: Library):
         super().__init__()
@@ -48,12 +53,6 @@ class GuiApp(Tk):
         self.__delete_book_widget__()
 
         self.list_of_books = []
-
-        # TODO: Consider 'Quit' button
-
-        # Add 'Quit' button
-        # self.quit_button = Button(text='Quit', width=BUTTON_WIDTH, command=self.destroy)
-        # self.quit_button.grid(column=0, row=3, pady=BUTTON_PADDING)
 
 #----------------------------- Widgets -----------------------------#
     def __view_all_widget__(self):
@@ -99,7 +98,7 @@ class GuiApp(Tk):
 
         is_read_label = Label(frame, text='Has been read?', bg=MAIN_BACKGROUND_COLOR)
         is_read_label.grid(column=0, row=7)
-        self.is_read_entry = tkinter.ttk.Combobox(frame, state="readonly", values=['Yes', 'Not yet'])
+        self.is_read_entry = ttk.Combobox(frame, state="readonly", values=['Yes', 'Not yet'])
         self.is_read_entry.grid(column=0, row=8, padx=ENTRY_PADDING)
         self.add_book_entries.append(self.is_read_entry)
 
@@ -111,7 +110,7 @@ class GuiApp(Tk):
 
         rating_label = Label(frame, text='My rating', bg=MAIN_BACKGROUND_COLOR)
         rating_label.grid(column=1, row=1)
-        self.rating_entry = tkinter.ttk.Combobox(frame, state="readonly", values=[str(score) for score in range(0, 11)])
+        self.rating_entry = ttk.Combobox(frame, state="readonly", values=BOOK_RATING_OPTIONS)
         self.rating_entry.grid(column=1, row=2, padx=ENTRY_PADDING)
         self.add_book_entries.append(self.rating_entry)
 
@@ -129,7 +128,7 @@ class GuiApp(Tk):
 
         location_label = Label(frame, text='Location at home', bg=MAIN_BACKGROUND_COLOR)
         location_label.grid(column=1, row=7)
-        self.location_entry = tkinter.ttk.Combobox(frame, state="readonly", values=['living room', 'bedroom'])
+        self.location_entry = ttk.Combobox(frame, state="readonly", values=BOOK_LOCATION_OPTIONS)
         self.location_entry.grid(column=1, row=8, padx=ENTRY_PADDING)
         self.add_book_entries.append(self.location_entry)
 
@@ -205,51 +204,69 @@ class GuiApp(Tk):
 
     def __add_book__(self):
         self.output.delete(first=0, last=END)
-        if self.is_read_entry.get() == 'Yes':
-            is_read = True
-        else:
-            is_read = ''
-        new_book = Book(
-            title=self.title_entry.get().title(),
-            author=self.author_entry.get().title(),
-            description=self.descr_entry.get(),
-            is_read=is_read,
-            current_page=self.current_page_entry.get(),
-            rating=self.rating_entry.get(),
-            notes=self.notes_entry.get(),
-            is_lent=self.is_lent_entry.get().title(),
-            location=self.location_entry.get(),
-            isbn=self.isbn_entry.get())
-        result = self.library.add_book(new_book)
-        if result:
-            self.output.insert(END, f'{new_book} {result}')
-        for entry in self.add_book_entries:
-            if type(entry) == tkinter.ttk.Combobox:
-                entry.set('')
+        self.list_of_books.clear()
+        if self.isbn_entry.get() != '' and self.title_entry.get().title() != '':
+            if self.is_read_entry.get() == 'Yes':
+                is_read = True
             else:
-                entry.delete(first=0, last=END)
+                is_read = False
+            new_book = Book(
+                title=self.title_entry.get().title(),
+                author=self.author_entry.get().title(),
+                description=self.descr_entry.get().replace('"', "'"),
+                is_read=is_read,
+                current_page=self.current_page_entry.get(),
+                rating=self.rating_entry.get(),
+                notes=self.notes_entry.get(),
+                is_lent=self.is_lent_entry.get().title(),
+                location=self.location_entry.get(),
+                isbn=self.isbn_entry.get())
+            result = self.library.add_book(new_book)
+            if result:
+                self.list_of_books.append(result)
+                self.output.insert(END, result, 'has been added to the library')
+            else:
+                book = self.library.find_book(criteria=('isbn', new_book.isbn.strip()))[0]
+                self.list_of_books.append(book)
+                self.output.insert(END, book, 'was already in the library')
+            for entry in self.add_book_entries:
+                if type(entry) == tkinter.ttk.Combobox:
+                    entry.set('')
+                else:
+                    entry.delete(first=0, last=END)
+        else:
+            self.output.insert(END, 'Book title and ISBN must be entered')
 
     def __find_book__(self):
+        self.list_of_books.clear()
         self.output.delete(first=0, last=END)
-        if self.search_by.get() != '':
+        if self.search_by.get() != '' and self.search_by_entry.get() != '':
+            self.output.delete(first=0, last=END)
             attribute = self.search_by.get()
             prompt = self.search_by_entry.get()
             criteria = (attribute, prompt)
             result = self.library.find_book(criteria=criteria)
             for book in result:
                 self.output.insert(END, book)
+                self.list_of_books.append(book)
             self.search_by.set('')
             self.search_by_entry.delete(first=0, last=END)
-
-    # TODO: DELETE BOOK should print title/author instead of ISBN - message
-    # TODO: show confirmation message before deleting book
 
     def __delete_book__(self):
         self.output.delete(first=0, last=END)
         isbn = self.isbn_to_delete.get()
-        result = self.library.delete_book(isbn=isbn)
-        self.output.insert(END, result)
-        self.isbn_to_delete.delete(first=0, last=END)
+        if isbn != '':
+            book_to_delete = self.library.find_book(('isbn', isbn))[0]
+            confirm = messagebox.askquestion('Delete book',
+                                             f'Are you sure you want to delete {book_to_delete}?',
+                                             icon=messagebox.WARNING)
+            if confirm == 'yes':
+                result = self.library.delete_book(isbn=isbn)
+                self.output.insert(END, f'Deleted {book_to_delete}')
+                self.isbn_to_delete.delete(first=0, last=END)
+        else:
+            self.output.insert(END, 'Enter ISBN of the book to delete')
+
 
 # ----------------------------- Book pop-up window -----------------------------#
 
@@ -259,13 +276,20 @@ class GuiApp(Tk):
         book = self.list_of_books[selection[0]]
 
         # Create pop-up window
-        self.window = Toplevel(bg=MAIN_BACKGROUND_COLOR, padx=MAIN_WINDOW_PADDING, pady=MAIN_WINDOW_PADDING)
+        self.window = Toplevel(bg=MAIN_BACKGROUND_COLOR,
+                               padx=MAIN_WINDOW_PADDING,
+                               pady=MAIN_WINDOW_PADDING)
         self.window.title('Book Details')
 
         # Fill pop-up window with widgets and book information
-        self.text_containers = []
+        self.text_containers = {}
+        combobox_fields = {'is_read': ['Yes', 'Not yet'],
+                           'rating': BOOK_RATING_OPTIONS,
+                           'location': BOOK_LOCATION_OPTIONS}
         centered_row = 0
         right_row = left_row = 4
+        self.style = ttk.Style()
+        self.style.configure('TCombobox', background='blue')
         for attribute, content in book.get_all_info().items():
             frame = LabelFrame(master=self.window,
                                text=f'{content[0]}',
@@ -284,22 +308,31 @@ class GuiApp(Tk):
                 frame.grid(column=1, row=left_row)
                 left_row += 1
             if attribute == 'description':
-                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                container = Text(frame,
+                                 bg=BOOK_WINDOW_TEXT_BG_COLOR,
                                  height=BOOK_WINDOW_DESCRIPTION_HEIGHT,
-                                 wrap='word', font=BOOK_WINDOW_TEXT_FONT)
-            elif attribute == 'notes':
-                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
-                                 height=BOOK_WINDOW_NOTES_HEIGHT, wrap='word',
+                                 wrap='word',
                                  font=BOOK_WINDOW_TEXT_FONT)
+            elif attribute == 'notes':
+                container = Text(frame,
+                                 bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                                 height=BOOK_WINDOW_NOTES_HEIGHT,
+                                 wrap='word',
+                                 font=BOOK_WINDOW_TEXT_FONT)
+            elif attribute in combobox_fields:
+                container = ttk.Combobox(frame,
+                                         font=BOOK_WINDOW_TEXT_FONT,
+                                         values=combobox_fields[attribute])
             else:
-                container = Text(frame, bg=BOOK_WINDOW_TEXT_BG_COLOR,
+                container = Text(frame,
+                                 bg=BOOK_WINDOW_TEXT_BG_COLOR,
                                  height=1,
                                  wrap='word',
                                  font=BOOK_WINDOW_TEXT_FONT)
             container.insert(tkinter.END, f'{content[1]}')
             container.config(state='disabled', width=text_container_width)
             container.grid(column=0, row=0, pady=BOOK_WINDOW_FRAME_PADDING)
-            self.text_containers.append(container)
+            self.text_containers[attribute] = container
             centered_row += 1
 
         # Create 'Edit' button
@@ -318,31 +351,45 @@ class GuiApp(Tk):
 
 # ----------------------------- Pop-up window button functionality -----------------------------#
 
-    # TODO: bug when description = 'notes'
+    # TODO: fix bug when 'description' is set to the content of 'column name. PATCH - add ' ' to content when rung SET query in updtae_book
 
     def __edit_book__(self):
-        self.isbn_to_update = self.text_containers[-1].get('1.0', tkinter.END).strip()
-        for container in self.text_containers:
-            container.config(state='normal', bg=BOOK_WINDOW_TEXT_BG_COLOR_EDIT)
+        self.isbn_to_update = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
+        for attr, container in self.text_containers.items():
+            if container.winfo_class() == 'TCombobox':
+                container.config(state='normal')
+            else:
+                container.config(state='normal', bg=BOOK_WINDOW_TEXT_BG_COLOR_EDIT)
 
     def __save_changes__(self):
         isbn = self.isbn_to_update
-        attributes = ['title', 'author', 'description', 'notes', 'is_read', 'current_page', 'rating', 'is_lent','location', 'isbn']
+        book_attributes = ['title', 'author', 'description', 'notes', 'is_read', 'current_page', 'rating', 'is_lent',
+                           'location', 'isbn']
         ind = 0
-        for container in self.text_containers:
-            content = container.get('1.0', tkinter.END).strip()
-            container.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
-            self.library.update_book(isbn=isbn, attribute=(attributes[ind], content))
+        for attr, container in self.text_containers.items():
+            if container.winfo_class() == 'TCombobox':
+                content = container.get().strip()
+                container.config(state='disabled')
+                if content == 'Yes':
+                    content = 'True'
+                elif content == 'Not yet':
+                    content = 'False'
+            else:
+                content = container.get('1.0', tkinter.END).strip()
+                container.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
+            self.library.update_book(isbn=isbn, attribute=(book_attributes[ind], content))
             ind += 1
         self.__display_all__()
 
-    # TODO: show confirmation message before deleting book
-
     def __delete_book_alt__(self):
-        isbn = self.text_containers[-1].get('1.0', tkinter.END).strip()
-        result = self.library.delete_book(isbn=isbn)
-        self.__display_all__()
-        self.window.destroy()
+        isbn = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
+        confirm = messagebox.askquestion('Delete book',
+                                         'Are you sure you want to delete the book?',
+                                         icon=messagebox.WARNING)
+        if confirm == 'yes':
+            self.library.delete_book(isbn=isbn)
+            self.__display_all__()
+            self.window.destroy()
 
 # ----------------------------- Class utilities -----------------------------#
 

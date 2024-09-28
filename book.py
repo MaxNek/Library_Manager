@@ -18,10 +18,10 @@ class Book:
         self.title = title
         self.author = author
         self.description = description
+        self.notes = notes
         self.is_read = is_read
         self.current_page = current_page
         self.rating = rating
-        self.notes = notes
         self.is_lent = is_lent
         self.location = location
         self.isbn = isbn
@@ -39,5 +39,7 @@ class Book:
                 'isbn': ('ISBN', self.isbn)}
 
     def __str__(self):
-        return f'"{self.title}" by {self.author}'
-
+        if self.author != '':
+            return f'"{self.title}" by {self.author}'
+        else:
+            return self.title
