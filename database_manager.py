@@ -18,7 +18,7 @@ class Library:
                 notes TEXT,
                 is_read TEXT,
                 current_page INTEGER,
-                rating REAL,
+                rating INTEGER,
                 is_lent TEXT,
                 location TEXT,
                 isbn INTEGER PRIMARY KEY
@@ -26,22 +26,26 @@ class Library:
 
     def all_books(self, sort='title') -> list:
         """
-        Return a list of all book in the library
+        Return a list of all book in the library.
         Args:
-            sort (str): search is sorted by 'sort' attribute
+            sort (str): search is sorted by 'sort' attribute.
         Returns:
-            result (list): a list of Book objects. If no match found, returns an empty list
+            result (list): a list of Book objects. If no match found, returns an empty list.
         """
-        query_result = self.cursor.execute(f'SELECT * FROM books ORDER BY {sort}').fetchall()
+        if sort == 'rating':
+            query_result = self.cursor.execute(f'SELECT * FROM books WHERE rating IS NOT "" ORDER BY {sort} DESC').fetchall()
+        else:
+            query_result = self.cursor.execute(f'SELECT * FROM books ORDER BY {sort}').fetchall()
         return self.__make_book__(query_result)
 
-    def add_book(self, book: Book) -> Book:
+    def add_book(self, book: Book) -> Book | str:
         """
-        Add a book in the library
+        Add a book in the library.
         Args:
-            book (Book): a Book object
+            book (Book): a Book object.
         Returns:
-            (Book): a book object
+            (Book): a book object.
+            (str): __str__ returns a string representation of the Book object.
         """
         try:
             self.cursor.execute(f'''INSERT INTO books VALUES (
@@ -64,11 +68,11 @@ class Library:
 
     def find_book(self, criteria: tuple) -> list:
         """
-        Locate a book by criteria
+        Locate a book by criteria.
         Args:
-            criteria (tuple): (attribute to search: str, value: str)
+            criteria (tuple): (attribute to search: str, value: str).
         Returns:
-            result (list): a list of Book objects. If no match found, returns an empty list
+            result (list): a list of Book objects. If no match found, returns an empty list.
         """
         if criteria == ('is_lent', 'is_lent_yes'):
             query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} IS NOT ""').fetchall()
@@ -80,24 +84,25 @@ class Library:
 
     def update_book(self, isbn, attribute: tuple) -> int:
         """
-        Locate a book by ISBN and update an attribute
+        Locate a book by ISBN and update an attribute.
         Args:
-            isbn (str): book ISBN
-            attribute (tuple): (attribute to update: str, new value: str)
+            isbn (str): book ISBN.
+            attribute (tuple): (attribute to update: str, new value: str).
         Returns:
-            (int): number of updated rows
+            (int): number of updated rows.
         """
         result = self.cursor.execute(f'UPDATE books SET {attribute[0]}="{attribute[1]}" WHERE isbn={isbn}').rowcount
         self.connection.commit()
         return result
 
-    def delete_book(self, isbn: str):
+    def delete_book(self, isbn: str) -> int | None:
         """
-        Locate a book by ISBN and delete it from the library
+        Locate a book by ISBN and delete it from the library.
         Args:
-            isbn (str): book ISBN
+            isbn (str): book ISBN.
         Returns:
-            (int): number of deleted rows. Returns None if no ISBN was entered
+            (int): number of deleted rows.
+            (None): Returns None if no ISBN was entered.
         """
         if isbn != '':
             result = self.cursor.execute(f'DELETE FROM books WHERE isbn={isbn}').rowcount
@@ -108,11 +113,11 @@ class Library:
 
     def __make_book__(self, query_result: list) -> list:
         """
-        Create a Book object
+        Create a Book object.
         Args:
-            query_result (list): result of a query in the Library
+            query_result (list): result of a query in the Library.
         Returns:
-            result (list): a list of Book objects
+            result (list): a list of Book objects.
         """
         result = []
         for item in query_result:

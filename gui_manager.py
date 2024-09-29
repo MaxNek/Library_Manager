@@ -32,15 +32,18 @@ BOOK_WINDOW_TEXT_BG_COLOR_EDIT = 'white'
 BOOK_WINDOW_DESCRIPTION_HEIGHT = 15
 BOOK_WINDOW_NOTES_HEIGHT = 2
 
-
-BOOK_LOCATION_OPTIONS = ['living room', 'bedroom']
 BOOK_RATING_OPTIONS = ['', '1', '2', '3', '4', '5']
+
+ABOUT_WINDOW_COLOR = 'light steel blue'
 
 class GuiApp(Tk):
     def __init__(self, library: Library):
         super().__init__()
         # Connect to a library
         self.library = library
+
+        # Location options
+        self.book_location_options = []
 
         # Create main gui window
         self.title('My Personal Library')
@@ -52,6 +55,17 @@ class GuiApp(Tk):
         self.__add_book_widget__()
         self.__find_book_widget__()
         self.__delete_book_widget__()
+        self.__menu__()
+
+        # Combobox styling
+        style = ttk.Style()
+        style.theme_settings("default",
+                             {"TCombobox": {
+                                 "map": {
+                                     "fieldbackground":[
+                                         ("readonly", BOOK_WINDOW_TEXT_BG_COLOR_EDIT),
+                                         ("disabled", BOOK_WINDOW_TEXT_BG_COLOR)]}}})
+        style.theme_use("default")
 
         self.list_of_books = []
 
@@ -60,13 +74,12 @@ class GuiApp(Tk):
         # Create widget frame
         frame = self.__make_frame__(column=0, row=0, widget_name='Show all books')
 
-        #TODO: 'View All widget' - Add sorting by rating
-
         # Create 'Sort by' dropdown
+        sort_options = ['Title', 'Author', 'Rating']
         sort_label = Label(frame, text='Sort by:', bg=MAIN_BACKGROUND_COLOR)
         sort_label.grid(column=0, row=1)
-        self.sort_by = tkinter.ttk.Combobox(frame, state="readonly", values=['title', 'author'])
-        self.sort_by.set('title')
+        self.sort_by = tkinter.ttk.Combobox(frame, state="readonly", values=sort_options)
+        self.sort_by.set('Title')
         self.sort_by.grid(column=0, row=2)
 
         # Create 'Show' button
@@ -129,7 +142,7 @@ class GuiApp(Tk):
 
         location_label = Label(frame, text='Location at home', bg=MAIN_BACKGROUND_COLOR)
         location_label.grid(column=1, row=7)
-        self.location_entry = ttk.Combobox(frame, state="readonly", values=BOOK_LOCATION_OPTIONS)
+        self.location_entry = ttk.Combobox(frame, state="normal", values=self.book_location_options)
         self.location_entry.grid(column=1, row=8, padx=ENTRY_PADDING)
         self.add_book_entries.append(self.location_entry)
 
@@ -192,15 +205,33 @@ class GuiApp(Tk):
         # Attach the scrollbar to the output screen
         self.scrollbar.config(command=self.output.yview)
 
+    # TODO: add 'Menu' option. Include 'About', option to add book location, consider option to modify gui colours
+
+    def __menu__(self):
+        top = self.winfo_toplevel()
+        self.menuBar = Menu(top)
+        top['menu'] = self.menuBar
+
+        self.subMenu = Menu(self.menuBar)
+        self.menuBar.add_cascade(label='Menu', menu=self.subMenu)
+        self.subMenu.add_command(label='Settings', command=self.__open_settings__)
+        self.subMenu.add_command(label='About', command=self.__open_about__)
+
     # ----------------------------- Widget button functionality -----------------------------#
 
     def __display_all__(self):
         self.list_of_books.clear()
         self.output.delete(first=0, last=END)
-        sort = self.sort_by.get()
+        sort = self.sort_by.get().lower()
         all_books = self.library.all_books(sort=sort)
         for book in all_books:
-            self.output.insert(END, book)
+            sort_option_names = {'title': book.title, 'author': book.author, 'rating': book.rating}
+            if sort == 'title':
+                self.output.insert(END, f'"{book.title}" by {book.author}')
+            elif sort == 'author':
+                self.output.insert(END, f'{book.author}, "{book.title}"')
+            else:
+                self.output.insert(END, f'{sort_option_names[sort]} {book}')
             self.list_of_books.append(book)
 
     def __add_book__(self):
@@ -260,7 +291,6 @@ class GuiApp(Tk):
                 attribute = self.search_by.get()
                 prompt = entry
             criteria = (attribute, prompt)
-            print(criteria)
             result = self.library.find_book(criteria=criteria)
             for book in result:
                 self.output.insert(END, book)
@@ -283,10 +313,34 @@ class GuiApp(Tk):
         else:
             self.output.insert(END, 'Enter ISBN of the book to delete')
 
+    def __open_settings__(self):
+        settings_window = Toplevel(bg=ABOUT_WINDOW_COLOR)
+        settings_window.title('Settings')
+        frame = LabelFrame(master=settings_window,
+                           text='Add location options',
+                           highlightbackground=WIDGET_FRAME_COLOR,
+                           highlightthickness=WIDGET_FRAME_BORDER,
+                           bg=MAIN_BACKGROUND_COLOR)
+        frame.grid(column=0, row=0, padx=20, pady=20)
+
+        self.new_location_entry = Entry(frame)
+        self.new_location_entry.grid(column=0, row=0, padx=20, pady=10)
+
+        add_button = Button(frame, text='Add', command=self.__add_location__)
+        add_button.grid(column=0, row=1, padx=20, pady=10)
+
+
+    def __open_about__(self):
+        about_window = Toplevel(bg=ABOUT_WINDOW_COLOR)
+        about_window.title('About')
+        about_window.geometry('250x100')
+        label = Label(about_window, text='Personal Library Manager\nby Max Nekrasov\n\n2024', justify=LEFT, bg=ABOUT_WINDOW_COLOR)
+        label.grid(column=0, row=0, padx=20, pady=20)
+
+    def __add_location__(self):
+        new_location = self.new_location_entry.get().strip()
 
 # ----------------------------- Book pop-up window -----------------------------#
-
-    # TODO: fix  Compbox colours
 
     def __click__(self, event):
         # Get book object from selection
@@ -303,7 +357,7 @@ class GuiApp(Tk):
         self.text_containers = {}
         combobox_fields = {'is_read': ['Yes', 'Not yet'],
                            'rating': BOOK_RATING_OPTIONS,
-                           'location': BOOK_LOCATION_OPTIONS}
+                           'location': self.book_location_options}
         centered_row = 0
         right_row = left_row = 4
         for attribute, content in book.get_all_info().items():
@@ -313,7 +367,7 @@ class GuiApp(Tk):
                                highlightthickness=WIDGET_FRAME_BORDER,
                                bg=MAIN_BACKGROUND_COLOR,
                                bd=0)
-            text_container_width = 20
+            text_container_width = ENTRY_WIDTH
             if attribute in ['title', 'author', 'description', 'notes']:
                 frame.grid(column=0, row=centered_row, columnspan=2)
                 text_container_width = 70
@@ -338,7 +392,9 @@ class GuiApp(Tk):
             elif attribute in combobox_fields:
                 container = ttk.Combobox(frame,
                                          font=BOOK_WINDOW_TEXT_FONT,
-                                         values=combobox_fields[attribute])
+                                         values=combobox_fields[attribute],
+                                         foreground='black')
+                text_container_width = ENTRY_WIDTH - 2
             else:
                 container = Text(frame,
                                  bg=BOOK_WINDOW_TEXT_BG_COLOR,
@@ -367,7 +423,7 @@ class GuiApp(Tk):
 
 # ----------------------------- Pop-up window button functionality -----------------------------#
 
-    # TODO: fix bug when 'description' is set to the content of 'column name. PATCH - add ' ' to content when rung SET query in update_book
+    # TODO: fix bug when 'description' is set to the content of 'column name
 
     def __edit_book__(self):
         self.isbn_to_update = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
