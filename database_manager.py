@@ -1,14 +1,39 @@
 import sqlite3
+import os
 from book import Book
 
 class Library:
     """
     A class representing personal library. SQLite is used to store and manage book data.
+
+    Constructor automatically creates (if it doesn't already exist):
+     - 'assets' directory.
+     - 'my_library.db' file in the 'assets' directory.
+     - 'books' table in the 'my_library.db' file.
+
+    'books' table schema:
+     - title TEXT NOT NULL
+     - author TEXT
+     - description TEXT
+     - notes TEXT
+     - is_read TEXT
+     - current_page INTEGER
+     - rating INTEGER
+     - is_lent TEXT
+     - location TEXT
+     - isbn INTEGER PRIMARY KEY
     """
     def __init__(self):
-        self.connection = sqlite3.connect("my_library.db")
+        # check if 'assets' directory exists and create one if it doesn't.
+        if not os.path.exists('assets'):
+            os.mkdir('assets')
+
+        # check if 'my_library.db' file exists and create one if it doesn't.
+        self.connection = sqlite3.connect('assets/my_library.db')
         self.cursor = self.connection.cursor()
         self.tables = self.cursor.execute('SELECT name FROM sqlite_master')
+
+        # check if 'books' table exist and create one if it doesn't.
         if self.tables.fetchone() is None:
             self.cursor.execute('''
             CREATE TABLE books(
@@ -24,14 +49,14 @@ class Library:
                 isbn INTEGER PRIMARY KEY
             )''')
 
-    def all_books(self, sort='title') -> list:
+    def all_books(self, sort: str ='title') -> list:
         """
         Return a list of all book in the library.
-        Args:
-            sort (str): search is sorted by 'sort' attribute.
-        Returns:
-            result (list): a list of Book objects. If no match found, returns an empty list.
+
+        :param sort: String. Search is sorted by the 'sort' attribute. By default, set to 'title'.
+        :return: a list of Book objects. If no match found, returns an empty list.
         """
+        # when sorting by rating, return result in descending order to have higher rated books on the top
         if sort == 'rating':
             query_result = self.cursor.execute(f'SELECT * FROM books WHERE rating IS NOT "" ORDER BY {sort} DESC').fetchall()
         else:
@@ -40,13 +65,14 @@ class Library:
 
     def add_book(self, book: Book) -> Book | str:
         """
-        Add a book in the library.
-        Args:
-            book (Book): a Book object.
-        Returns:
-            (Book): a book object.
-            (str): __str__ returns a string representation of the Book object.
+        Add a book to the library.
+
+        :param book: a Book object.
+        :return: a book object and a human-readable representation of the Book object.
         """
+        # Use Book object to fill the columns in the book's row.
+        # The order of inserting the elements must exactly match the order in the 'books' table schema.
+        # If database already has a book with this ISBN, do nothing.
         try:
             self.cursor.execute(f'''INSERT INTO books VALUES (
                 "{book.title}", 
@@ -68,12 +94,13 @@ class Library:
 
     def find_book(self, criteria: tuple) -> list:
         """
-        Locate a book by criteria.
-        Args:
-            criteria (tuple): (attribute to search: str, value: str).
-        Returns:
-            result (list): a list of Book objects. If no match found, returns an empty list.
+        Find a book in the database by criteria.
+
+        :param criteria: Tuple - (attribute to search: str, value: str).
+        :return: a list of Book objects. If no match found, returns an empty list.
         """
+        # Search books that are/aren't lent by checking if 'is_lent' column has a borrower's name.
+        # When searching by other criteria, perform pattern matching in the respective column.
         if criteria == ('is_lent', 'is_lent_yes'):
             query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} IS NOT ""').fetchall()
         elif criteria == ('is_lent', 'is_lent_no'):
@@ -82,14 +109,13 @@ class Library:
             query_result = self.cursor.execute(f'SELECT * FROM books WHERE {criteria[0]} LIKE "%{criteria[1]}%"').fetchall()
         return self.__make_book__(query_result)
 
-    def update_book(self, isbn, attribute: tuple) -> int:
+    def update_book(self, isbn: str, attribute: tuple) -> int:
         """
-        Locate a book by ISBN and update an attribute.
-        Args:
-            isbn (str): book ISBN.
-            attribute (tuple): (attribute to update: str, new value: str).
-        Returns:
-            (int): number of updated rows.
+        Find a book in the database by ISBN and update an attribute.
+
+        :param isbn: String - book ISBN.
+        :param attribute: Tuple - (attribute to update: str, new value: str).
+        :return: Integer - number of updated rows in the database.
         """
         result = self.cursor.execute(f'UPDATE books SET {attribute[0]}="{attribute[1]}" WHERE isbn={isbn}').rowcount
         self.connection.commit()
@@ -97,13 +123,12 @@ class Library:
 
     def delete_book(self, isbn: str) -> int | None:
         """
-        Locate a book by ISBN and delete it from the library.
-        Args:
-            isbn (str): book ISBN.
-        Returns:
-            (int): number of deleted rows.
-            (None): Returns None if no ISBN was entered.
+        Find a book in the database by ISBN and delete it from the library.
+
+        :param isbn: String - book ISBN.
+        :return: Integer - number of deleted rows in the database. Return None if no ISBN was entered.
         """
+        # If no ISBN provided (isbn is an empty string) - do nothing, return nothing.
         if isbn != '':
             result = self.cursor.execute(f'DELETE FROM books WHERE isbn={isbn}').rowcount
             self.connection.commit()
@@ -114,11 +139,12 @@ class Library:
     def __make_book__(self, query_result: list) -> list:
         """
         Create a Book object.
-        Args:
-            query_result (list): result of a query in the Library.
-        Returns:
-            result (list): a list of Book objects.
+
+        :param query_result: List - result of a query in the Library.
+        :return: List - a list of Book objects.
         """
+        # Create books object from the query result and append them to a list.
+        # The order of the book attributes below must exactly match 'books' table schema.
         result = []
         for item in query_result:
             book = Book(

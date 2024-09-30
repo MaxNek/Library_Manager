@@ -1,20 +1,20 @@
 class Book:
     """
     A class to represent a book. If non-required attributes are not set, they default to an empty string.
+    All params must be of string type.
 
-    Attributes:
-        title (str): Title of the book, required attribute
-        isbn (str): Book's ISBN, required attribute
-        author (str): Author of the book
-        description (str): Description of the book
-        is_read (str): If the book has been read 'is_read' is True
-        current_page (str): Currently reading at this page
-        rating (str): Personal rating of the book
-        notes (str): Personal notes
-        is_lent (str): The name of the person who borrowed the book
-        location (str): Book's location at home
+    :param title: Title of the book, required attribute.
+    :param isbn: Book's ISBN, required attribute.
+    :param author: Author of the book, optional.
+    :param description: Description of the book, optional.
+    :param is_read: True if the has been read, optional, by default sets to False.
+    :param current_page: Currently reading at this page, optional.
+    :param rating: Personal rating of the book, optional.
+    :param notes: Personal notes, optional.
+    :param is_lent: The name of the person who borrowed the book, optional.
+    :param location: Book's location at home, optional.
     """
-    def __init__(self, title, isbn, author='', description='', is_read='', current_page='', rating='', notes='', is_lent='', location=''):
+    def __init__(self, title: str, isbn: str, author='', description='', is_read='', current_page='', rating='', notes='', is_lent='', location=''):
         self.title = title
         self.author = author
         self.description = description
@@ -27,11 +27,17 @@ class Book:
         self.isbn = isbn
 
     def get_all_info(self) -> dict:
+        """
+        Return all information about a book from the database.
+        Includes column name (str), user-friendly name of the column (str), column content (str).
+
+        :return: dictionary {'column name': ('user-friendly name', 'content')}
+        """
         return {'title': ('Book title', self.title),
                 'author': ('Author\'s name', self.author),
                 'description': ('Book description', self.description),
                 'notes': ('My notes', self.notes),
-                'is_read': ('Has the book been read?', "Yes" if self.is_read else "Not yet"),
+                'is_read': ('Has the book been read?', "Yes" if self.is_read == 'True' else "Not yet"),
                 'current_page': ('Currently at page', self.current_page),
                 'rating': ('My rating', self.rating),
                 'is_lent': ('Book is lent to', self.is_lent),
@@ -39,6 +45,11 @@ class Book:
                 'isbn': ('ISBN', self.isbn)}
 
     def __str__(self):
+        """
+        Return human-readable representation of a Book object in string format.
+
+        :return: string - {"Book title"} by {Author's name}
+        """
         if self.author != '':
             return f'"{self.title}" by {self.author}'
         else:
