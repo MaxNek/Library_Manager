@@ -33,11 +33,10 @@ BOOK_WINDOW_TEXT_BG_COLOR_EDIT = 'white'
 BOOK_WINDOW_DESCRIPTION_HEIGHT = 15
 BOOK_WINDOW_NOTES_HEIGHT = 2
 
-# TODO: consider giving user the ability to set their own rating scale.
-BOOK_RATING_OPTIONS = ['', '1', '2', '3', '4', '5']
-
 TOP_MENU_WINDOW_COLOR = 'light steel blue'
 TOP_MENU_WINDOW_MARGIN = 20
+
+DEFAULT_RATING_SCALE = ['', '1', '2', '3', '4', '5']
 
 #----------------------------- GUI -----------------------------#
 
@@ -57,6 +56,13 @@ class GuiApp(Tk):
         # Get book location options if any were saved.
         self.book_location_options = self.app_config.get_book_locations()
 
+        # TODO: consider giving user the ability to set their own rating scale.
+        rating_scale = self.app_config.get_book_rating_scale()
+        if len(rating_scale) == 0:
+            self.book_rating_options = DEFAULT_RATING_SCALE
+        else:
+            self.book_rating_options = rating_scale
+
         # Create main gui window.
         self.title('My Personal Library')
         self.config(bg=MAIN_BACKGROUND_COLOR, padx=MAIN_WINDOW_PADDING, pady=MAIN_WINDOW_PADDING)
@@ -71,12 +77,13 @@ class GuiApp(Tk):
 
         # Set dropdown entry fields styling for 'readonly' and 'disabled' states.
         style = ttk.Style()
-        style.theme_settings("default",
-                             {"TCombobox": {"map": {
-                                 "fieldbackground":[
-                                     ("readonly", BOOK_WINDOW_TEXT_BG_COLOR_EDIT),
-                                     ("disabled", BOOK_WINDOW_TEXT_BG_COLOR)]}}})
-        style.theme_use("default")
+        style.theme_settings('default',
+                             {'TCombobox': {'map': {
+                                 'fieldbackground':[
+                                     ('readonly', BOOK_WINDOW_TEXT_BG_COLOR_EDIT),
+                                     ('disabled', BOOK_WINDOW_TEXT_BG_COLOR)]}}})
+        style.configure('TCombobox', fieldbackground='orange')
+        style.theme_use('default')
 
         # Create a list to store currently displayed books as Book objects.
         self.list_of_books = []
@@ -108,7 +115,7 @@ class GuiApp(Tk):
 
         # Indicates dropdown fields and their options (ttk.combobox).
         combobox_fields = {'is_read': ['Yes', 'Not yet'],
-                           'rating': BOOK_RATING_OPTIONS,
+                           'rating': self.book_rating_options,
                            'location': self.book_location_options}
 
         # A dictionary to store all entry fields as element 1 of the list in the value.
@@ -427,7 +434,7 @@ class GuiApp(Tk):
 
             # Dropdown fields options.
             combobox_fields = {'is_read': ['Yes', 'Not yet'],
-                               'rating': BOOK_RATING_OPTIONS,
+                               'rating': self.book_rating_options,
                                'location': self.book_location_options}
 
             # Create text fields and dropdowns. Lay out on the window. Add to 'text_containers' dictionary.

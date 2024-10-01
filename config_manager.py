@@ -85,3 +85,27 @@ class AppConfig:
         except FileNotFoundError:
             locations = []
         return locations
+
+    def set_rating_scale(self, rating_scale):
+        try:
+            open('configuration/rating_scale.txt', mode='w').close()
+            with open('configuration/rating_scale.txt', mode='w') as file:
+                file.write(f'{range(1, 10)}')
+        except FileNotFoundError:
+            with open('configuration/rating_scale.txt', mode='w') as file:
+                file.write(f'{rating_scale}')
+
+
+    def get_book_rating_scale(self) -> list:
+        try:
+            with open('configuration/rating_scale.txt', mode='r') as file:
+                content = file.readline()
+                rating_scale = content.split(',')
+        except FileNotFoundError:
+            rating_scale = []
+        return rating_scale
+
+
+conf = AppConfig()
+
+conf.set_rating_scale([1])
