@@ -414,7 +414,7 @@ class GuiApp(Tk):
         # Get Book object from selection in the output screen.
         selection = self.output.curselection()
         try:
-            book = self.list_of_books[selection[0]]
+            self.open_book = self.list_of_books[selection[0]]
 
             # Create pop-up window for the selected book.
             self.window = Toplevel(bg=MAIN_BACKGROUND_COLOR,
@@ -433,7 +433,7 @@ class GuiApp(Tk):
             # Create text fields and dropdowns. Lay out on the window. Add to 'text_containers' dictionary.
             centered_row = 0
             right_row = left_row = 4
-            for attribute, content in book.get_all_info().items():
+            for attribute, content in self.open_book.get_all_info().items():
                 frame = LabelFrame(master=self.window,
                                    text=f'{content[0]}',
                                    highlightbackground=WIDGET_FRAME_COLOR,
@@ -545,9 +545,21 @@ class GuiApp(Tk):
         # Refresh output screen with updated book.
         self.__view_all__()
 
-    # TODO: add 'Discard changes' functionality
     def __discard_changes__(self):
-        pass
+        # Delete all content from all entry fields.
+        # Replace it with the content from the database for this book.
+        # Disable entry fields for editing.
+        book = self.open_book
+        for key, value in book.get_all_info().items():
+            if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                self.text_containers[key].set('')
+            else:
+                self.text_containers[key].delete('1.0', 'end')
+            self.text_containers[key].insert(tkinter.END, f'{value[1]}')
+            if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                self.text_containers[key].config(state='disabled')
+            else:
+                self.text_containers[key].config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
 
     def __delete_book_alt__(self):
         # Get and hold on book's ISBN.
