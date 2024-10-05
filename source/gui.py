@@ -344,6 +344,7 @@ class Gui(Tk):
 
         selection = self.output.curselection()
         try:
+            self.is_edit_mode = False
             self.open_book = self.current_books[selection[0]]
             self.window = Toplevel(bg=MAIN_BACKGROUND_COLOR,
                                    padx=MAIN_WINDOW_PADDING,
@@ -428,6 +429,7 @@ class Gui(Tk):
 # ----------------------------- Pop-up window button functionality -----------------------------#
 
     def __edit_book__(self):
+        self.is_edit_mode = True
         self.isbn_to_update = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
 
         for attr, container in self.text_containers.items():
@@ -437,39 +439,43 @@ class Gui(Tk):
                 container.config(state='normal', bg=BOOK_WINDOW_TEXT_BG_COLOR_EDIT)
 
     def __save_changes__(self):
-        isbn = self.isbn_to_update
-
-        book_attributes = [key for key in self.template]
-
-        ind = 0
-        for key, value in self.text_containers.items():
-            if value.winfo_class() == 'TCombobox':
-                content = value.get().strip()
-                value.config(state='disabled')
-                if content == 'Yes':
-                    content = 'True'
-                elif content == 'Not yet':
-                    content = 'False'
-            else:
-                content = value.get('1.0', tkinter.END).strip()
-                value.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
-            self.library.update_book(isbn=isbn, attribute=(book_attributes[ind], content))
-            ind += 1
-
-        self.__view_all__()
+        if self.is_edit_mode:
+            isbn = self.isbn_to_update
+            book_attributes = [key for key in self.template]
+            ind = 0
+            for key, value in self.text_containers.items():
+                if value.winfo_class() == 'TCombobox':
+                    content = value.get().strip()
+                    value.config(state='disabled')
+                    if content == 'Yes':
+                        content = 'True'
+                    elif content == 'Not yet':
+                        content = 'False'
+                else:
+                    content = value.get('1.0', tkinter.END).strip()
+                    value.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
+                self.library.update_book(isbn=isbn, attribute=(book_attributes[ind], content))
+                ind += 1
+            self.is_edit_mode = False
+            self.__view_all__()
 
     def __discard_changes__(self):
-        book = self.open_book
-        for key, value in book.get_all_info().items():
-            if type(self.text_containers[key]) == tkinter.ttk.Combobox:
-                self.text_containers[key].set('')
-            else:
-                self.text_containers[key].delete('1.0', 'end')
-            self.text_containers[key].insert(tkinter.END, f'{value[1]}')
-            if type(self.text_containers[key]) == tkinter.ttk.Combobox:
-                self.text_containers[key].config(state='disabled')
-            else:
-                self.text_containers[key].config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
+        if self.is_edit_mode:
+            book = self.open_book
+            for key, value in book.get_all_info().items():
+                if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                    self.text_containers[key].set('')
+                else:
+                    self.text_containers[key].delete('1.0', 'end')
+                if key == 'is_read':
+                    self.text_containers[key].insert(tkinter.END, f'{'Yes' if value[1] == 'True' else 'Not yet'}')
+                else:
+                    self.text_containers[key].insert(tkinter.END, f'{value[1]}')
+                if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                    self.text_containers[key].config(state='disabled')
+                else:
+                    self.text_containers[key].config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
+            self.is_edit_mode = False
 
     def __delete_book_alt__(self):
         isbn = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
