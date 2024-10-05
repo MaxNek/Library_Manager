@@ -249,7 +249,6 @@ class Gui(Tk):
                 self.output.insert(END, book)
                 self.current_books.append(book)
 
-            # self.search_by.set('')
             self.search_by_entry.delete(first=0, last=END)
 
     def __delete_book__(self):
