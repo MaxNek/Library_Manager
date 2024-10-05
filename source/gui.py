@@ -1,11 +1,10 @@
-import tkinter
-from tkinter.ttk import Combobox
+from tkinter import *
+from tkinter import messagebox
+from tkinter.ttk import Combobox, Style
 from source.database import Library
 from source.config import AppConfig
 from source.book import Book, BookTemplate
-from tkinter import *
-from tkinter import messagebox
-import tkinter.ttk as ttk
+
 
 #----------------------------- GUI layout settings -----------------------------#
 
@@ -51,10 +50,20 @@ class Gui(Tk):
     """
     def __init__(self, library: Library):
         super().__init__()
+        # Set styling for ttk elements.
+        style = Style()
+        style.theme_settings('default',{
+            'TCombobox': {
+                'map': {
+                    'fieldbackground':[
+                        ('readonly', BOOK_WINDOW_TEXT_BG_COLOR_EDIT),
+                        ('disabled', BOOK_WINDOW_TEXT_BG_COLOR)
+                    ]}}})
+        style.theme_use('default')
+
         self.library = library
         self.app_config = AppConfig()
-        self.book_template = BookTemplate()
-        self.template = self.book_template.get_template_data()
+        self.template = BookTemplate().get_template_data()
 
         self.title(MAIN_WINDOW_TITLE)
         self.config(bg=MAIN_BACKGROUND_COLOR, padx=MAIN_WINDOW_PADDING, pady=MAIN_WINDOW_PADDING)
@@ -65,18 +74,6 @@ class Gui(Tk):
         self.__find_book_widget__()
         self.__delete_book_widget__()
         self.__menu__()
-
-        # Set styling for ttk elements.
-        style = ttk.Style()
-        style.theme_settings('default',{
-            'TCombobox': {
-                'map': {
-                    'fieldbackground':[
-                        ('readonly', BOOK_WINDOW_TEXT_BG_COLOR_EDIT),
-                        ('disabled', BOOK_WINDOW_TEXT_BG_COLOR)
-                    ]}}})
-        style.configure('TCombobox', fieldbackground='orange')
-        style.theme_use('default')
 
         self.current_books = []
 
@@ -102,12 +99,12 @@ class Gui(Tk):
 
         self.add_book_entries = {}
         count = row = 0
-        for key, value in self.book_template.get_template_data().items():
+        for key, value in self.template.items():
             column = 0 if count % 2 == 0 else 1
             label = Label(frame, text=value['name'], bg=MAIN_BACKGROUND_COLOR)
             label.grid(column=column, row=row)
             if value['selectable']:
-                self.entry = ttk.Combobox(frame, state=value['def_state'], values=value['options'])
+                self.entry = Combobox(frame, state=value['def_state'], values=value['options'])
             else:
                 self.entry = Entry(frame, width=ENTRY_WIDTH)
             self.entry.grid(column=column, row=row + 1, padx=ENTRY_PADDING)
@@ -178,7 +175,7 @@ class Gui(Tk):
 
         sort = self.sort_by.get()
         sort_by = 'title'
-        for key, value in self.book_template.get_template_data().items():
+        for key, value in self.template.items():
             if value['name'] == sort:
                 sort_by = key
         all_books = self.library.all_books(sort=sort)
@@ -335,11 +332,15 @@ class Gui(Tk):
         start = int(self.rating_entries['From']['entry'].get())
         end = int(self.rating_entries['To']['entry'].get())
         step = float(self.rating_entries['Step']['entry'].get())
-        self.app_config.set_rating_scale(start=start, end=end, step=step)
-        messagebox.showinfo(title='Book rating', message='New rating scale has been saved')
-        self.new_location_entry.delete(first=0, last=END)
-        for value in self.rating_entries.values():
-            value['entry'].set('')
+        if start < end:
+            self.app_config.set_rating_scale(start=start, end=end, step=step)
+            messagebox.showinfo(title='Book rating', message='New rating scale has been saved')
+            for value in self.rating_entries.values():
+                value['entry'].set('')
+        else:
+            messagebox.showinfo(title='Book rating', message='"From" must be less than "To"')
+            for value in self.rating_entries.values():
+                value['entry'].set('')
 
 # ----------------------------- Individual book pop-up window -----------------------------#
 
@@ -390,7 +391,7 @@ class Gui(Tk):
                                      wrap='word',
                                      font=BOOK_WINDOW_TEXT_FONT)
                 elif value[0]['selectable']:
-                    container = ttk.Combobox(frame,
+                    container = Combobox(frame,
                                              font=BOOK_WINDOW_TEXT_FONT,
                                              values=value[0]['options'],
                                              foreground='black')
@@ -402,9 +403,9 @@ class Gui(Tk):
                                      wrap='word',
                                      font=BOOK_WINDOW_TEXT_FONT)
                 if key == 'is_read':
-                    container.insert(tkinter.END, f'{'Yes' if value[1] == 'True' else 'Not yet'}')
+                    container.insert(END, f'{'Yes' if value[1] == 'True' else 'Not yet'}')
                 else:
-                    container.insert(tkinter.END, f'{value[1]}')
+                    container.insert(END, f'{value[1]}')
                 container.config(state='disabled', width=text_container_width)
                 container.grid(column=0, row=0, pady=BOOK_WINDOW_FRAME_PADDING)
                 self.text_containers[key] = container
@@ -436,7 +437,7 @@ class Gui(Tk):
 
     def __edit_book__(self):
         self.is_edit_mode = True
-        self.isbn_to_update = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
+        self.isbn_to_update = self.text_containers['isbn'].get('1.0', END).strip()
 
         for attr, container in self.text_containers.items():
             if container.winfo_class() == 'TCombobox':
@@ -458,7 +459,7 @@ class Gui(Tk):
                     elif content == 'Not yet':
                         content = 'False'
                 else:
-                    content = value.get('1.0', tkinter.END).strip()
+                    content = value.get('1.0', END).strip()
                     value.config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
                 self.library.update_book(isbn=isbn, attribute=(book_attributes[ind], content))
                 ind += 1
@@ -469,22 +470,22 @@ class Gui(Tk):
         if self.is_edit_mode:
             book = self.open_book
             for key, value in book.get_all_info().items():
-                if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                if type(self.text_containers[key]) == Combobox:
                     self.text_containers[key].set('')
                 else:
                     self.text_containers[key].delete('1.0', 'end')
                 if key == 'is_read':
-                    self.text_containers[key].insert(tkinter.END, f'{'Yes' if value[1] == 'True' else 'Not yet'}')
+                    self.text_containers[key].insert(END, f'{'Yes' if value[1] == 'True' else 'Not yet'}')
                 else:
-                    self.text_containers[key].insert(tkinter.END, f'{value[1]}')
-                if type(self.text_containers[key]) == tkinter.ttk.Combobox:
+                    self.text_containers[key].insert(END, f'{value[1]}')
+                if type(self.text_containers[key]) == Combobox:
                     self.text_containers[key].config(state='disabled')
                 else:
                     self.text_containers[key].config(state='disabled', bg=BOOK_WINDOW_TEXT_BG_COLOR)
             self.is_edit_mode = False
 
     def __delete_book_alt__(self):
-        isbn = self.text_containers['isbn'].get('1.0', tkinter.END).strip()
+        isbn = self.text_containers['isbn'].get('1.0', END).strip()
 
         confirm = messagebox.askquestion('Delete book',
                                          'Are you sure you want to delete the book?',
