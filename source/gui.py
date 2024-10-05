@@ -194,7 +194,6 @@ class Gui(Tk):
     def __add_book__(self):
         self.__clear_screen__()
 
-        # TODO: title() entries.
         entries = self.add_book_entries
         if entries['isbn'].get() != '' and entries['title'].get() != '':
             kwargs = {}
