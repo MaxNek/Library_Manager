@@ -40,7 +40,7 @@ class BookTemplate:
                 'selectable': False,
                 'width': 2},
             'is_read': {
-                'name': 'Has the book been read?',
+                'name': 'Has been read?',
                 'type': 'TEXT',
                 'sort_all_by': False,
                 'search_by': True,

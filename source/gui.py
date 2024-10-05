@@ -1,6 +1,5 @@
 import tkinter
 from tkinter.ttk import Combobox
-
 from source.database import Library
 from source.config import AppConfig
 from source.book import Book, BookTemplate
@@ -81,6 +80,8 @@ class Gui(Tk):
 
         self.current_books = []
 
+        self.mainloop()
+
 #----------------------------- Functions to create widgets -----------------------------#
 
     def __view_all_widget__(self):
@@ -89,7 +90,7 @@ class Gui(Tk):
         sort_options = [value['name'] for key, value in self.template.items() if value['sort_all_by']]
         sort_label = Label(frame, text='Sort by:', bg=MAIN_BACKGROUND_COLOR)
         sort_label.grid(column=0, row=1)
-        self.sort_by = tkinter.ttk.Combobox(frame, state="readonly", values=sort_options)
+        self.sort_by = Combobox(frame, state="readonly", values=sort_options)
         self.sort_by.set(self.template['title']['name'])
         self.sort_by.grid(column=0, row=2)
 
@@ -125,7 +126,7 @@ class Gui(Tk):
         search_options.append('Has been borrowed?')
         search_by_label = Label(frame, text='Search:', bg=MAIN_BACKGROUND_COLOR)
         search_by_label.grid(column=0, row=1)
-        self.search_by = tkinter.ttk.Combobox(frame, state="readonly", values=search_options)
+        self.search_by = Combobox(frame, state="readonly", values=search_options)
         self.search_by.set(self.template['title']['name'])
         self.search_by.grid(column=0, row=2)
 
@@ -236,6 +237,12 @@ class Gui(Tk):
             if search_by == 'Has been borrowed?':
                 attribute = 'is_lent'
                 prompt = 'is_lent_yes' if entry == 'yes' else 'is_lent_no'
+            elif search_by == self.template['is_read']['name']:
+                attribute = 'is_read'
+                if entry == 'yes':
+                    prompt = 'True'
+                elif entry == 'no':
+                    prompt = 'False'
             else:
                 for key, value in self.template.items():
                     if value['name'] == search_by:
