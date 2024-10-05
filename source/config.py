@@ -1,17 +1,23 @@
 import os
+from itertools import count
+
+SETTINGS_DIR = './settings'
+LOCATIONS_FILE = 'locations.txt'
+RATING_SCALE_FILE = 'rating_scale.txt'
+
+DEFAULT_RATING_SCALE = ['', '1', '2', '3', '4', '5']
 
 class AppConfig:
     """
-    A class to create application configuration manager.
+    A class to create application settings manager.
     Enables a user to add/delete options for drop-down entry fields.
 
     Constructor automatically creates (if it doesn't already exist):
-     - 'configuration' directory.
+     - 'settings' directory.
     """
     def __init__(self):
-        # check if 'configuration' directory exists and create one if it doesn't.
-        if not os.path.exists('configuration'):
-            os.mkdir('configuration')
+        if not os.path.exists(SETTINGS_DIR):
+            os.mkdir(SETTINGS_DIR)
 
     def add_book_location(self, new_location: str) -> int:
         """
@@ -21,11 +27,8 @@ class AppConfig:
         :return: Integer - 0 if the location was already in the file. 1 if the location was successfully added.
         """
         location_exists = False
-
         try:
-            # Read 'locations.txt' and check if the location is already there.
-            # If not write it in the file and set result to 1. If not, set result to 0.
-            with open('configuration/locations.txt', mode='r+') as file:
+            with open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='r+') as file:
                 locations = file.readlines()
                 for location in locations:
                     if location.strip() == new_location:
@@ -35,8 +38,7 @@ class AppConfig:
                     file.write(f'{new_location}\n')
                     result = 1
         except FileNotFoundError:
-            # Create 'locations.txt' and write location in it, set result to 1.
-            with open('configuration/locations.txt', mode='w') as file:
+            with open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='w') as file:
                 file.write(f'{new_location}\n')
                 result = 1
         return result
@@ -50,16 +52,13 @@ class AppConfig:
         """
         location = f'{location}\n'
         try:
-            # Read 'locations.txt'. Check if the location to remove is in the list of locations from the file.
-            # If yes, clear the file, re-write it with all locations except the one to remove, set result to 1.
-            # If not, set result to 0.
-            file =  open('configuration/locations.txt', mode='r')
+            file =  open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='r')
             locations = file.readlines()
             file.close()
             if location in locations:
                 locations.remove(location)
-                open('configuration/locations.txt', mode='w').close()
-                file = open('configuration/locations.txt', mode='w')
+                open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='w').close()
+                file = open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='w')
                 file.writelines(locations)
                 file.close()
                 result = 1
@@ -78,34 +77,48 @@ class AppConfig:
         """
         locations = []
         try:
-            # Read 'locations.txt', strip and append each line to the list of locations.
-            with open('configuration/locations.txt', mode='r') as file:
+            with open(f'{SETTINGS_DIR}/{LOCATIONS_FILE}', mode='r') as file:
                 for location in file.readlines():
                     locations.append(location.strip())
         except FileNotFoundError:
             locations = []
         return locations
 
-    def set_rating_scale(self, rating_scale):
+    def set_rating_scale(self, start: int, end: int, step: int | float):
+        """
+        Write start,end,step in 'rating_scale.txt' file.
+
+        :param start: Integer - minimum rating
+        :param end:  Integer - maximum rating
+        :param step: Float - step of the scale
+        """
         try:
-            open('configuration/rating_scale.txt', mode='w').close()
-            with open('configuration/rating_scale.txt', mode='w') as file:
-                file.write(f'{range(1, 10)}')
+            open(f'{SETTINGS_DIR}/{RATING_SCALE_FILE}', mode='w').close()
+            with open(f'{SETTINGS_DIR}/{RATING_SCALE_FILE}', mode='w') as file:
+                file.write(f'{start},{end},{step}')
         except FileNotFoundError:
-            with open('configuration/rating_scale.txt', mode='w') as file:
-                file.write(f'{rating_scale}')
+            with open(f'{SETTINGS_DIR}/{RATING_SCALE_FILE}', mode='w') as file:
+                file.write(f'{start},{end},{step}')
 
 
-    def get_book_rating_scale(self) -> list:
+    def get_rating_scale(self) -> list:
+        """
+        Return list of rating scale options in ascending order as strings.
+
+        :return: List of rating scale options.
+        """
         try:
-            with open('configuration/rating_scale.txt', mode='r') as file:
+            with open(f'{SETTINGS_DIR}/{RATING_SCALE_FILE}', mode='r') as file:
                 content = file.readline()
-                rating_scale = content.split(',')
+                rating_range = content.split(',')
+                start = int(rating_range[0])
+                stop = int(rating_range[1])
+                step = float(rating_range[2])
+                rating_scale = ['']
+                for i in count(start, step):
+                    rating_scale.append(str(i))
+                    if i >= stop:
+                        break
         except FileNotFoundError:
-            rating_scale = []
+            rating_scale = DEFAULT_RATING_SCALE
         return rating_scale
-
-
-conf = AppConfig()
-
-conf.set_rating_scale([1])

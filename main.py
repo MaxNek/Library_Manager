@@ -1,7 +1,7 @@
-from database_manager import Library
-from gui_manager import GuiApp
+from source.database import Library
+from source.gui import Gui
 
 library = Library()
 
-app = GuiApp(library)
-app.mainloop()
+gui = Gui(library)
+gui.mainloop()
