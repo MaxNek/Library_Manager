@@ -22,11 +22,11 @@ class Library:
         self.cursor = self.connection.cursor()
         self.tables = self.cursor.execute('SELECT name FROM sqlite_master')
 
-        self.book_template = BookTemplate()
+        self.template = BookTemplate().get_template_data()
 
         if self.tables.fetchone() is None:
             columns = ''
-            for key, value in self.book_template.get_template_data().items():
+            for key, value in self.template.items():
                 if key == 'title':
                     column = f'{key} {value["type"]} NOT NULL'
                 elif key == 'isbn':
@@ -35,7 +35,7 @@ class Library:
                     column = f'{key} {value["type"]}'
                 columns = columns + f'{column},'
             columns = columns[:-1]
-
+            # TODO: use placeholder here?
             query = f'CREATE TABLE books({columns})'
             self.cursor.execute(query)
 
@@ -47,7 +47,7 @@ class Library:
         :return: a list of Book objects. If no match found, returns an empty list.
         """
         sort_by = 'title'
-        for key, value in self.book_template.get_template_data().items():
+        for key, value in self.template.items():
             if value['name'] == sort:
                 sort_by = key
         if sort_by == 'rating':
@@ -71,16 +71,13 @@ class Library:
                 columns = columns + f':{key},'
             columns = columns[:-1]
             query = f'INSERT INTO books VALUES ({columns})'
-
             data_dict = {}
             for key, value in book.items():
                 data_dict[key] = book[key][1]
             data = (data_dict,)
-
             self.cursor.executemany(query, data)
             self.connection.commit()
             return new_book
-
         except sqlite3.IntegrityError as error:
             if error.args == ('UNIQUE constraint failed: books.isbn',):
                 pass
@@ -153,7 +150,7 @@ class Library:
         for item in query_result:
             kwargs = {}
             i = 0
-            for key in self.book_template.get_template_data():
+            for key in self.template:
                 kwargs[key] = item[i]
                 i += 1
             book = Book(**kwargs)
