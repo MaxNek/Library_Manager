@@ -298,7 +298,7 @@ class OutputScreen:
     def __click__(self, event):
         line = self.output.curselection()
         if line:
-            window = BookWindow(parent=self.parent, line=line)
+            BookWindow(parent=self.parent, line=line)
 
 class BookWindow:
     def __init__(self, parent, line):
