@@ -74,7 +74,6 @@ class Gui(Tk):
         self.output = OutputScreen(parent=self, w_column=0, w_row=2, w_columnspan=2)
         self.delete_book = DeleteBook(parent=self, w_column=1, w_row=3, w_rowspan=2)
         self.menu = MainMenu(parent=self)
-        # self.__menu__()
 
         self.mainloop()
 
