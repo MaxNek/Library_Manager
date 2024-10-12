@@ -262,12 +262,13 @@ class DeleteBook:
                                                  icon=messagebox.WARNING)
                 if confirm == 'yes':
                     self.parent.library.delete_book(isbn=delete_isbn)
-                    self.parent.output.insert(END, f'Deleted {book_to_delete}')
+                    output_message = [f'Deleted {book_to_delete}']
                     self.widget['sections']['delete_book']['entry'].delete(first=0, last=END)
             else:
-                self.parent.output.insert(index=END, args=[f'There is no bok with ISBN {delete_isbn} in the library'])
+                output_message = [f'There is no bok with ISBN {delete_isbn} in the library']
         else:
-            self.parent.output.insert(index=END, args=['Enter ISBN of the book to delete'])
+            output_message=['Enter ISBN of the book to delete']
+        self.parent.output.insert(index=END, args = output_message)
 
 class OutputScreen:
     def __init__(self, parent, w_column, w_row, w_columnspan=1, w_rowspan=1):

@@ -136,7 +136,7 @@ class Book:
         Return book's 'attribute' content.
 
         :param attribute: String - book's attribute
-        :return:  String - value stored in the Book object ufor the 'attribute'
+        :return:  String - value stored in the Book object for the 'attribute'
         """
         return self.book_info[attribute]
 

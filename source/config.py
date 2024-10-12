@@ -100,7 +100,6 @@ class AppConfig:
             with open(f'{SETTINGS_DIR}/{RATING_SCALE_FILE}', mode='w') as file:
                 file.write(f'{start},{end},{step}')
 
-
     def get_rating_scale(self) -> list:
         """
         Return list of rating scale options in ascending order as strings.
